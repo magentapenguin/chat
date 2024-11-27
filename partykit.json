@@ -1,0 +1,14 @@
+{
+    "$schema": "https://www.partykit.io/schema.json",
+    "name": "chat",
+    "main": "party/relay.js",
+    "compatibilityDate": "2024-11-18",
+    "serve": {
+        "path": "public",
+        "build": {
+            "entry": "src/script.js",
+            "minify": true
+        }
+    }
+}
+  

@@ -1,0 +1,138 @@
+body {
+    --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: var(--font);
+    background-color: #f4f4f4;
+    color: #000;
+    color-scheme: light;
+    font-size: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+* {
+    font-family: var(--font) !important;
+}
+@media ( prefers-color-scheme: dark ) {
+    body {
+        background-color: #1a1a1a;
+        color: #fff;
+        color-scheme: dark;
+    }
+}
+
+h1 {
+    font-size: 1.5em;
+    margin: 0;
+    padding: 0;
+}
+
+h2 {
+    font-size: 1.25em;
+    margin: 0;
+    padding: 0;
+}
+
+h3 {
+    font-size: 1em;
+    margin: 0;
+    padding: 0;
+}
+
+h4 {
+    font-size: 0.875em;
+    margin: 0;
+    padding: 0;
+}
+
+h5 {
+    font-size: 0.75em;
+    margin: 0;
+    padding: 0;
+}
+
+h6 {
+    font-size: 0.625em;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: #00b7ff;
+}
+
+a:hover {
+    color: #009bd8;
+}
+
+form {
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+    padding: 0;
+}
+
+#chat-form input {
+    flex: 1;
+    padding: 0.5em;
+    border-radius: 0.5em;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border: 1px solid #dbdbdb;
+}
+#chat-form button {
+    padding: 0.5em;
+    border-radius: 0.5em;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border: none;
+    background-color: #00dd25;
+    border-left-style: none !important;
+    font-weight: bold;
+    border: 1px solid #dbdbdb;
+}
+#chat-form button:hover {
+    background-color: #00b71f;
+}
+@media ( prefers-color-scheme: dark ) {
+    #chat-form input {
+        border: 1px solid #2b2b2b;
+    }
+    #chat-form button {
+        background-color: #00580f;
+        border: 1px solid #2b2b2b;
+    }
+    #chat-form button:hover {
+        background-color: #00570e;
+    }
+}
+
+* {
+    box-sizing: border-box;
+    transition: outline-offset 0.2s ease;
+}
+:focus-visible {
+    outline: 2px solid #4c00ff7c;
+    outline-offset: 2px;
+}
+
+#chat {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 1em;
+}
+
+button {
+    cursor: pointer;
+}
+.message > p {
+    margin: 0;
+    padding: 0;
+}
+
+/* 
