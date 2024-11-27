@@ -17,15 +17,38 @@ export default class ConnectionStatus extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <style>
                 :host {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 0.5rem;
-                    border-radius: 0.25rem;
+                    position: fixed;
+                    top: 0;
+                    right: 0;
+                    font-size: small;
+                    text-transform: uppercase;
+                    background-color: #fff;
+                    border: 2px solid #ccc;
+                    color: #aaa;
+                    padding: 0.1em 0.5em;
+                    padding-left: 0.25em;
+                    border-radius: 1em;
                     margin: 0.5rem;
-                    --ready: #d4edda;
-                    --closed: #f8d7da;
-                    --waiting: #fff3cd;
+                    --ready: #00ff3c;
+                    --closed: #ff0015;
+                    --waiting: #ffc400;
+                    box-shadow: 0 0.5em 1em #00000023;
+                    display: flex;
+                    align-items: center;
+                }
+                @media ( prefers-color-scheme: dark ) {
+                    :host {
+                        border: 2px solid #555;
+                        background-color: #333;
+                        color: #888;
+                        box-shadow: 0 0.5em 1em #0000007c;
+                    }
+                }
+                .status {
+                    width: 1rem;
+                    height: 1rem;
+                    border-radius: 50%;
+                    margin-right: 0.2rem;
                 }
             </style>
             <div class="status"></div>
