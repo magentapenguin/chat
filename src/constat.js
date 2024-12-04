@@ -96,7 +96,7 @@ export default class ConnectionStatus extends HTMLElement {
                 break;
             case WebSocket.CLOSING:
             case WebSocket.CLOSED:
-                this.updateStatus('Disconnected', 'error');
+                this.updateStatus('Disconnected', 'closed');
                 break;
         }
     }

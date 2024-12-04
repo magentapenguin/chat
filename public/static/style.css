@@ -130,7 +130,13 @@ form {
 button {
     cursor: pointer;
 }
-.message > p {
-    margin: 0;
-    padding: 0;
+.message > .user {
+    font-weight: bold;
+}
+.message.system {
+    filter: brightness(0.7);
+}
+time {
+    font-size: small;
+    
 }
