@@ -1,9 +1,25 @@
-import { customAlphabet, random } from 'nanoid';
+import { customAlphabet } from 'nanoid';
 import PartySocket from "partysocket";
 import dompurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
+import { full as emoji } from 'markdown-it-emoji'
+import twemoji from '@twemoji/api';
 import './constat.js';
 import z from "zod";
+
+const md = new MarkdownIt({
+    html: false,
+    linkify: true,
+    typographer: true,
+});
+md.use(emoji);
+md.renderer.rules.link_open = function(tokens, idx, options, env, self) {
+    const href = tokens[idx].attrs[tokens[idx].attrs.length - 1][1];
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">`;
+}
+md.renderer.rules.link_close = function(tokens, idx, options, env, self) {
+    return '<i class="fa-solid fa-arrow-up-right-from-square fa-xs link-decor"></i></a>';
+}
 
 document.getElementById('localstorage-consent-button').addEventListener('click', () => {
     localStorage.setItem('consent', 'true');
@@ -48,24 +64,28 @@ const ServerMessage = z.union([
 ]);
 
 const tips = [
-    "Use /move to change rooms",
-    "Use /help for info on commands",
-    "Use /list to list all users",
+    "Use !move to change rooms",
+    "Have fun!",
+    "Use !help for info on commands",
+    "Be nice!",
+    "Use !list to list all users",
+    "Ask for help if you need it",
+    "[Markdown](https://www.markdownguide.org/basic-syntax/) is supported",
 ];
-let tipsIndex = random(0, tips.length - 1);
+let tipsIndex = Math.floor(Math.random() * tips.length);
 const chatTip = document.getElementById('chat-tip');
-chatTip.textContent = tips[tipsIndex];
-document.getElementById('chat-tip-next').addEventListener('click', () => {
+chatTip.innerHTML = md.renderInline(tips[tipsIndex]);
+document.getElementById('chat-tip-container').addEventListener('click', () => {
     tipsIndex = (tipsIndex + 1) % tips.length;
-    chatTip.animate([
+    document.getElementById('chat-tip').animate([
         { opacity: 1 },
         { opacity: 0 },
     ], {
         duration: 200,
         fill: 'forwards',
     }).onfinish = () => {
-        chatTip.textContent = tips[tipsIndex];
-        chatTip.animate([
+        chatTip.innerHTML = md.renderInline(tips[tipsIndex]);
+        document.getElementById('chat-tip').animate([
             { opacity: 0 },
             { opacity: 1 },
         ], {
@@ -112,7 +132,6 @@ function usernameColor(username, seed = 0) {
 }
 const alphabet = '6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz';
 const nanoid = customAlphabet(alphabet, 8);
-const md = new MarkdownIt();
 
 var room = localStorage.getItem('room');
 if (!room) {
@@ -123,15 +142,14 @@ if (!room) {
 const socket = new PartySocket({
     host: location.host,
     room: room,
-    id: nanoid()
+    id: localStorage.getItem('nickname') || nanoid(),
 });
 document.querySelector('connection-status').link(socket);
 
 const log_message = (msg) => {
-    const el = document.createElement('div');
-    msg = Object.assign(msg, { message: dompurify.sanitize(md.renderInline(msg.message)) });  
-    msg = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${msg.message}`;
-    el.innerHTML = msg;
+    const el = document.createElement('div');  
+    msg = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${dompurify.sanitize(md.renderInline(msg.message))}`;
+    el.innerHTML = twemoji.parse(msg);
     el.className = 'message';
     chat.appendChild(el);
     return el;
@@ -152,23 +170,38 @@ form.addEventListener('submit', (event) => {
     event.preventDefault();
     const input = form.querySelector('input');
     let msg = { type: 'chat', message: input.value, username: socket.id, timestamp: stamp() };
-    log_message(msg).scrollIntoView();
-    if (input.value.startsWith('/')) {
+    console.log(msg)
+    log_message(msg).scrollIntoView({ block: 'start' });
+    if (input.value.startsWith('!')) {
         const parts = input.value.split(' ');
         switch (parts[0]) {
-            case '/move':
-                if (parts.length === 2) {
-                    const room = parts[1];
-                    socket.updateProperties({ room });
-                    localStorage.setItem('room', room);
-                    document.getElementById('chat-room').textContent = 'Loading...';
-                    document.getElementById('chat-room').style.color = 'unset';
-                    socket.reconnect();
-                    input.value = '';
-                    return;
+            case '!move':
+                let room;
+                if (parts.length <= 2) {
+                    room = parts[1];
+                } else {
+                    room = 'chat';
                 }
-            case '/help':
-                sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Commands: /move, /help`);
+                socket.updateProperties({ room });
+                localStorage.setItem('room', room);
+                document.getElementById('chat-room').textContent = 'Loading...';
+                document.getElementById('chat-room').style.color = 'unset';
+                socket.reconnect();
+                input.value = '';
+                return;
+            case '!help':
+                if (parts.length === 2) {
+                    const command = parts[1];
+                    if (command === 'move') {
+                        sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Commands: !move [room]`);
+                    }
+                    if (command === 'help') {
+                        sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Commands: !help [command]`);
+                    }
+                } else {
+                    sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Commands: !move, !help`);
+                }
+            
         }
     }
     input.value = '';
@@ -199,7 +232,7 @@ socket.addEventListener('message', (message) => {
             log_message(data);
         }
         if (type === 'error') {
-            sys_message(`${timestamp2html(data.timestamp)} - ${data.message}`, 'error');
+            sys_message(`${timestamp2html(data.timestamp)} - <span class="user">SYSTEM (ERROR)</span>: ${data.message}`, 'error');
         }
         if (type === 'join') {
             sys_message(`${timestamp2html(data.timestamp)} - <span class="user" data-user="${data.username}">${data.username}</span> joined the chat`);

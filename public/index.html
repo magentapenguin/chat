@@ -9,12 +9,16 @@
     <meta name="keywords" content="chat, chat application, chat app">
     <title>Chat</title>
     <link rel="stylesheet" href="static/style.css">
+    <script src="https://kit.fontawesome.com/433c98b60c.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
     <connection-status></connection-status>
-    <h1>Chat</h1>
-    <div id="chat"></div>
+    <div id="chat">
+        <noscript>
+            <p>This website requires Javascript to function properly. Please enable Javascript in your browser.</p>
+        </noscript>
+    </div>
     <div id="chat-form-container">
         <div>Your id: <strong id="chat-id" class="user">Loading...</strong> | Room: <strong id="chat-room"
                 title="Use /move &lt;room&gt; to move rooms">Loading...</strong></div>
@@ -23,14 +27,14 @@
             <!-- TODO: <div id="emoji-picker"></div>-->
             <button type="submit">Send</button>
         </form>
-        <small><span id="chat-tip">Use /help for a list of commands</span> <a href="#" id="chat-tip-next"
-                role="button">Next Tip</a></small>
+        <small id="chat-tip-container"><span id="chat-tip" aria-live="polite"><noscript>Don't you need Javascript for this?</noscript></span> <button id="chat-tip-next" class="link">Next Tip</button></small>
     </div>
     <div id="localstorage-consent">
         <p>This website uses local storage to store data. By using this website you agree to this.</p> <button
             id="localstorage-consent-button">Close</button>
         <br>
-        <script src="dist/script.js" defer></script>
+    </div>  
+    <script src="dist/script.js" defer></script>
 </body>
 
 </html>

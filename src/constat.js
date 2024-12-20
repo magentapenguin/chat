@@ -26,7 +26,7 @@ export default class ConnectionStatus extends HTMLElement {
                     border: 2px solid #ccc;
                     color: #aaa;
                     padding: 0.1em 0.5em;
-                    padding-left: 0.25em;
+                    padding-left: 0.2em;
                     border-radius: 1em;
                     margin: 0.5rem;
                     --ready: #00ff3c;

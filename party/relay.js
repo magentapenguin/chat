@@ -54,7 +54,7 @@ export default class RelayServer {
                 server.syncMessages(true)
                 server.room.broadcast(JSON.stringify({ type: 'messages', messages: server.messages }));
                 return { type: 'info', message: 'Messages cleared' };
-            }
+            }, doc: '!clear - Clear all messages'
         },
         "help": {
             use(server, msg, sender, input) {
@@ -66,8 +66,8 @@ export default class RelayServer {
                         return { type: 'error', message: 'Command not found' };
                     }
                 }
-                return { type: 'info', message: 'Commands: ' + Object.keys(server.commands).join(', ') + '\nUse /help [command] to get help on a command' };
-            }, doc: '/help [command] - Get help on a command'
+                return { type: 'info', message: 'Commands: ' + Object.keys(server.commands).map((x)=>'!'+x).join(', ') + '\nUse !help [command] to get help on a command' };
+            }, doc: '!help [command] - Get help on a command'
         },
         "list": {
             use(server, msg, sender, input) {
@@ -77,7 +77,7 @@ export default class RelayServer {
                 let users = [...server.room.getConnections()].map((conn) => conn.id);
                 let userlist = users.map(formatuser).join(', ');
                 return { type: 'info', message: `Users: ${userlist}` };
-            }, doc: '/list - List users in the chat'
+            }, doc: '!list - List users in the chat'
         }
     }
     // when a client sends a message
@@ -93,7 +93,7 @@ export default class RelayServer {
         if (data.type === 'chat') {
             this.messages.push(data);
             this.syncMessages();
-            if (data.message.startsWith('/')) {
+            if (data.message.startsWith('!')) {
                 const parts = data.message.split(' ');
                 const command = parts[0].substring(1);
                 if (this.commands[command]) {
@@ -109,7 +109,7 @@ export default class RelayServer {
                         }
                     }
                     try {
-                        out = this.commands[command](this, message, sender, parts);
+                        out = this.commands[command].use(this, message, sender, parts);
                     } catch (err) {
                         console.error(err);
                         sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
