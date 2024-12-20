@@ -48,22 +48,36 @@ export default class RelayServer {
         this.messages = [];
     }
     commands = {
-        "/clear": (server, msg, sender, input) => {
-            server.messages = [];
-            server.syncMessages(true)
-            server.room.broadcast(JSON.stringify({ type: 'messages', messages: server.messages }));
-            return { type: 'info', message: 'Messages cleared' };
-        },
-        "/help": (server, msg, sender, input) => {
-            return { type: 'info', message: 'Commands: /clear, /help' };
-        },
-        "/list": async (server, msg, sender, input) => {
-            const formatuser = (user) => {
-                return `<span class="user" data-user="${user}">${user}</span>`;
+        "clear": {
+            use(server, msg, sender, input) {
+                server.messages = [];
+                server.syncMessages(true)
+                server.room.broadcast(JSON.stringify({ type: 'messages', messages: server.messages }));
+                return { type: 'info', message: 'Messages cleared' };
             }
-            let users = [...this.room.getConnections()].map((conn) => conn.id);
-            let userlist = users.map(formatuser).join(', ');
-            return { type: 'info', message: `Users: ${userlist}` };
+        },
+        "help": {
+            use(server, msg, sender, input) {
+                if (input.length > 1) {
+                    const command = input[1];
+                    if (server.commands[command]) {
+                        return { type: 'info', message: server.commands[command].doc };
+                    } else {
+                        return { type: 'error', message: 'Command not found' };
+                    }
+                }
+                return { type: 'info', message: 'Commands: ' + Object.keys(server.commands).join(', ') + '\nUse /help [command] to get help on a command' };
+            }, doc: '/help [command] - Get help on a command'
+        },
+        "list": {
+            use(server, msg, sender, input) {
+                const formatuser = (user) => {
+                    return `<span class="user" data-user="${user}">${user}</span>`;
+                }
+                let users = [...server.room.getConnections()].map((conn) => conn.id);
+                let userlist = users.map(formatuser).join(', ');
+                return { type: 'info', message: `Users: ${userlist}` };
+            }, doc: '/list - List users in the chat'
         }
     }
     // when a client sends a message
@@ -76,15 +90,24 @@ export default class RelayServer {
         }
         const data = result.data;
         let preventSend = false;
-        let extraData;
         if (data.type === 'chat') {
             this.messages.push(data);
             this.syncMessages();
             if (data.message.startsWith('/')) {
                 const parts = data.message.split(' ');
-                const command = parts[0];
+                const command = parts[0].substring(1);
                 if (this.commands[command]) {
+                    preventSend = true;
                     let out;
+                    const handle_out = (result) => {
+                        console.log('handle', result);
+                        if (out.type === 'info') {
+                            sender.send(JSON.stringify({ type: 'system', message: result.message, timestamp: stamp() }));
+                        }
+                        if (out.type === 'error') {
+                            sender.send(JSON.stringify({ type: 'error', message: result.message, timestamp: stamp() }));
+                        }
+                    }
                     try {
                         out = this.commands[command](this, message, sender, parts);
                     } catch (err) {
@@ -94,34 +117,17 @@ export default class RelayServer {
                     }
                     console.log(out);
                     if (out instanceof Promise) {
-                        out.then((result) => {
-                            console.log(result);
-                            if (result.type === 'info') {
-                                extraData = { type: 'system', message: result.message, timestamp: stamp() }
-                            }
-                            if (result.type === 'error') {
-                                preventSend = true;
-                                sender.send(JSON.stringify({ type: 'error', message: result.message, timestamp: stamp() }));
-                            }
-                        }).catch((err) => {
+                        out.then(handle_out).catch((err) => {
                             console.error(err);
-                            preventSend = true;
                             sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
                         });
-                    }
-                    if (out.type === 'info') {
-                        extraData = JSON.stringify({ type: 'system', message: out.message, timestamp: stamp() });
-                        
-                    }
-                    if (out.type === 'error') {
-                        preventSend = true;
-                        sender.send(JSON.stringify({ type: 'error', message: out.message, timestamp: stamp() }));
+                    } else {
+                        handle_out(out);
                     }
                 }
             }
         }
         if (!preventSend) this.room.broadcast(JSON.stringify(data), [sender.id]);
-        if (extraData && !preventSend) this.room.broadcast(JSON.stringify(extraData));
     }
     onReady() {
         this.syncMessages();

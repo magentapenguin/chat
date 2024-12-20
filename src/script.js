@@ -1,4 +1,4 @@
-import { customAlphabet } from 'nanoid';
+import { customAlphabet, random } from 'nanoid';
 import PartySocket from "partysocket";
 import dompurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
@@ -46,6 +46,35 @@ const UpdateChatMessage = z.object({
 const ServerMessage = z.union([
     ErrorMessage, JoinMessage, LeaveMessage, UpdateChatMessage, ChatMessage, SystemMessage
 ]);
+
+const tips = [
+    "Use /move to change rooms",
+    "Use /help for info on commands",
+    "Use /list to list all users",
+];
+let tipsIndex = random(0, tips.length - 1);
+const chatTip = document.getElementById('chat-tip');
+chatTip.textContent = tips[tipsIndex];
+document.getElementById('chat-tip-next').addEventListener('click', () => {
+    tipsIndex = (tipsIndex + 1) % tips.length;
+    chatTip.animate([
+        { opacity: 1 },
+        { opacity: 0 },
+    ], {
+        duration: 200,
+        fill: 'forwards',
+    }).onfinish = () => {
+        chatTip.textContent = tips[tipsIndex];
+        chatTip.animate([
+            { opacity: 0 },
+            { opacity: 1 },
+        ], {
+            duration: 200,
+            fill: 'forwards',
+        });
+    };
+});
+
 
 // https://stackoverflow.com/a/52171480
 const cyrb53 = (str, seed = 0) => {
