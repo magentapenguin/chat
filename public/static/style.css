@@ -3,11 +3,9 @@ body {
     font-family: var(--font);
     background-color: #f4f4f4;
     color: #000;
-    color-scheme: light;
     font-size: 1.2rem;
     display: flex;
     flex-direction: column;
-    height: 100%;
 }
 html {
     margin: 0;
@@ -21,7 +19,6 @@ html {
     body {
         background-color: #1a1a1a;
         color: #fff;
-        color-scheme: dark;
     }
 }
 
@@ -116,7 +113,7 @@ form {
     transition: outline-offset 0.2s ease;
 }
 :focus-visible {
-    outline: 2px solid #4c00ff7c;
+    outline: 2px solid #00ffdd7c;
     outline-offset: 2px;
 }
 
@@ -127,16 +124,64 @@ form {
     padding: 1em;
 }
 
+#chat-form-container {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1em;
+    background-color: #f4f4f4;
+    border-top: 2px solid #dbdbdb;
+}
+@media ( prefers-color-scheme: dark ) {
+    #chat-form-container {
+        background-color: #1a1a1a;
+        border-top: 2px solid #2b2b2b;
+    }
+}
+
+
 button {
     cursor: pointer;
 }
 .message > .user {
     font-weight: bold;
 }
-.message.system {
-    filter: brightness(0.7);
+.message.error {
+    color: #800000;
+}
+@media ( prefers-color-scheme: dark ) {
+    .message.error {
+        color: #ff5f5f;
+    }
 }
 time {
     font-size: small;
-    
+}
+#localstorage-consent {
+    position: fixed;
+    appearance: none;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.1em 1em;
+    background-color: #006b96;
+    border-top: 2px solid #04a6db;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+#localstorage-consent button {
+    float: right;
+    background-color: transparent;
+    border: none;
+    text-decoration: none;
+    font-weight: bold;
+}
+#localstorage-consent button:hover {
+    text-decoration: underline;
+}
+small {
+    font-size: small;
+    filter: brightness(0.5);
 }
