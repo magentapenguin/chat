@@ -95,6 +95,9 @@ document.getElementById('chat-tip-container').addEventListener('click', () => {
     };
 });
 
+// 
+
+//
 
 // https://stackoverflow.com/a/52171480
 const cyrb53 = (str, seed = 0) => {
@@ -272,3 +275,11 @@ const observer = new MutationObserver((mutations) => {
     }
 });
 observer.observe(chat, { childList: true, subtree: true });
+(() => {
+    window.addEventListener('message', (event) => {
+        if (event.data === 'ready') {
+            window.parent.postMessage('ready', '*');
+        }
+    });
+    window.parent.postMessage('ready', '*');
+})();
