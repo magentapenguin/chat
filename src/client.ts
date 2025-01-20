@@ -2,9 +2,9 @@ import { customAlphabet } from 'nanoid';
 import PartySocket from "partysocket";
 import dompurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
-import { full as emoji } from 'markdown-it-emoji'
+import { full as emoji } from 'markdown-it-emoji';
 import twemoji from '@twemoji/api';
-import './constat.js';
+import ConnectionStatus from './connection-status.ts';
 import z from "zod";
 
 const md = new MarkdownIt({
@@ -21,13 +21,14 @@ md.renderer.rules.link_close = function(tokens, idx, options, env, self) {
     return '<i class="fa-solid fa-arrow-up-right-from-square fa-xs link-decor"></i></a>';
 }
 
-document.getElementById('localstorage-consent-button').addEventListener('click', () => {
+document.getElementById('localstorage-consent-button')?.addEventListener('click', () => {
     localStorage.setItem('consent', 'true');
-    document.getElementById('localstorage-consent').remove();
+    document.getElementById('localstorage-consent')?.remove();
 });
 if (localStorage.getItem('consent')) {
-    document.getElementById('localstorage-consent').remove();
+    document.getElementById('localstorage-consent')?.remove();
 }
+
 const ChatMessage = z.object({
     type: z.literal('chat'),
     message: z.string(),
@@ -59,48 +60,53 @@ const UpdateChatMessage = z.object({
     type: z.literal('messages'),
     messages: z.array(z.union([JoinMessage, LeaveMessage, ChatMessage])),
 });
+const CalmMessage = z.object({
+    type: z.literal('calm'),
+});
 const ServerMessage = z.union([
-    ErrorMessage, JoinMessage, LeaveMessage, UpdateChatMessage, ChatMessage, SystemMessage
+    ErrorMessage, JoinMessage, LeaveMessage, UpdateChatMessage, ChatMessage, SystemMessage, CalmMessage
 ]);
 
-const tips = [
+const tips: string[] = [
     "Use !move to change rooms",
     "Have fun!",
     "Use !help for info on commands",
     "Be nice!",
     "Use !list to list all users",
     "Ask for help if you need it",
-    "[Markdown](https://www.markdownguide.org/basic-syntax/) is supported",
 ];
 let tipsIndex = Math.floor(Math.random() * tips.length);
-const chatTip = document.getElementById('chat-tip');
+const chatTip = document.getElementById('chat-tip') as HTMLElement;
 chatTip.innerHTML = md.renderInline(tips[tipsIndex]);
-document.getElementById('chat-tip-container').addEventListener('click', () => {
+document.getElementById('chat-tip-container')?.addEventListener('click', () => {
     tipsIndex = (tipsIndex + 1) % tips.length;
-    document.getElementById('chat-tip').animate([
-        { opacity: 1 },
-        { opacity: 0 },
-    ], {
-        duration: 200,
-        fill: 'forwards',
-    }).onfinish = () => {
-        chatTip.innerHTML = md.renderInline(tips[tipsIndex]);
-        document.getElementById('chat-tip').animate([
-            { opacity: 0 },
+    const chatTipElement = document.getElementById('chat-tip');
+    if (chatTipElement) {
+        chatTipElement.animate([
             { opacity: 1 },
+            { opacity: 0 },
         ], {
             duration: 200,
             fill: 'forwards',
-        });
-    };
+        }).onfinish = () => {
+            chatTip.innerHTML = md.renderInline(tips[tipsIndex]);
+            document.getElementById('chat-tip')?.animate([
+                { opacity: 0 },
+                { opacity: 1 },
+            ], {
+                duration: 200,
+                fill: 'forwards',
+            });
+        };
+    }
 });
 
-// 
+//
 
 //
 
 // https://stackoverflow.com/a/52171480
-const cyrb53 = (str, seed = 0) => {
+const cyrb53 = (str: string, seed = 0): number => {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
     for(let i = 0, ch; i < str.length; i++) {
         ch = str.charCodeAt(i);
@@ -115,28 +121,28 @@ const cyrb53 = (str, seed = 0) => {
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };
 
-function stamp() {
+function stamp(): string {
     return new Date().toISOString();
 }
-function humanize(date) {
+function humanize(date: string | Date): string {
     if (typeof date === 'string') {
         date = new Date(date);
     }
     return date.toLocaleDateString()+' '+date.toLocaleTimeString();
 }
 
-function timestamp2html(timestamp) {
+function timestamp2html(timestamp: string): string {
     return `<time datetime="${timestamp}">${humanize(timestamp)}</time>`;
 }
 
-function usernameColor(username, seed = 0) {
-    const hue = cyrb53(username, seed) % 360
+function usernameColor(username: string, seed = 0): string {
+    const hue = cyrb53(username, seed) % 360;
     return `hsl(${hue}, 50%, 50%)`;
 }
 const alphabet = '6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz';
 const nanoid = customAlphabet(alphabet, 8);
 
-var room = localStorage.getItem('room');
+let room = localStorage.getItem('room');
 if (!room) {
     room = 'chat';
     localStorage.setItem('room', room);
@@ -147,17 +153,18 @@ const socket = new PartySocket({
     room: room,
     id: localStorage.getItem('nickname') || nanoid(),
 });
-document.querySelector('connection-status').link(socket);
+(document.querySelector('connection-status') as ConnectionStatus).link(socket);
 
-const log_message = (msg) => {
+const log_message = (msg: { message: string, username: string, timestamp: string }): HTMLElement => {
     const el = document.createElement('div');  
-    msg = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${dompurify.sanitize(md.renderInline(msg.message))}`;
-    el.innerHTML = twemoji.parse(msg);
+    const sanitizedMessage = dompurify.sanitize(md.renderInline(msg.message));
+    const parsedMessage = twemoji.parse(sanitizedMessage);
+    el.innerHTML = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${parsedMessage}`;
     el.className = 'message';
     chat.appendChild(el);
     return el;
 }
-const sys_message = (msg, extraclasses) => {
+const sys_message = (msg: string, extraclasses: string | undefined = undefined): HTMLElement => {
     const el = document.createElement('div');
     el.innerHTML = dompurify.sanitize(msg);
     el.className = 'message system'+(extraclasses ? ' '+extraclasses : '');
@@ -165,15 +172,14 @@ const sys_message = (msg, extraclasses) => {
     return el;
 }
 
+const chat = document.getElementById('chat') as HTMLElement;
+const form = document.getElementById('chat-form') as HTMLFormElement;
 
-const chat = document.getElementById('chat');
-const form = document.getElementById('chat-form');
-
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', (event: Event) => {
     event.preventDefault();
-    const input = form.querySelector('input');
-    let msg = { type: 'chat', message: input.value, username: socket.id, timestamp: stamp() };
-    console.log(msg)
+    const input = form.querySelector('input') as HTMLInputElement;
+    const msg = { type: 'chat', message: input.value, username: socket.id, timestamp: stamp() };
+    console.log(msg);
     log_message(msg).scrollIntoView({ block: 'start' });
     if (input.value.startsWith('!')) {
         const parts = input.value.split(' ');
@@ -187,8 +193,8 @@ form.addEventListener('submit', (event) => {
                 }
                 socket.updateProperties({ room });
                 localStorage.setItem('room', room);
-                document.getElementById('chat-room').textContent = 'Loading...';
-                document.getElementById('chat-room').style.color = 'unset';
+                document.getElementById('chat-room')!.textContent = 'Loading...';
+                document.getElementById('chat-room')!.style.color = 'unset';
                 socket.reconnect();
                 input.value = '';
                 return;
@@ -212,24 +218,24 @@ form.addEventListener('submit', (event) => {
 });
 
 socket.addEventListener('open', () => {
-    const chatId = document.getElementById('chat-id');
+    const chatId = document.getElementById('chat-id') as HTMLElement;
     chatId.textContent = socket.id;
     chatId.style.color = usernameColor(socket.id);
-    const chatRoom = document.getElementById('chat-room');
-    chatRoom.textContent = socket.room;
-    chatRoom.style.color = usernameColor(socket.room, 7);
+    const chatRoom = document.getElementById('chat-room') as HTMLElement;
+    chatRoom.textContent = socket.room ?? '';
+    chatRoom.style.color = usernameColor(socket.room ?? '', 7);
 
     console.log('Connected to chat server');
 });
 
-socket.addEventListener('message', (message) => {
+socket.addEventListener('message', (message: MessageEvent) => {
     console.log('Received message:', message.data);
     const result = ServerMessage.safeParse(JSON.parse(message.data));
     if (!result.success) {
         console.error('Invalid message:', message.data);
         return;
     }
-    const handleMessage = (msg) => {
+    const handleMessage = (msg: any) => {
         const { type, ...data } = msg;
         if (type === 'chat') {
             log_message(data);
@@ -252,6 +258,9 @@ socket.addEventListener('message', (message) => {
                 handleMessage(msg);
             }
         }
+        if (type === 'calm') {
+            location.reload();
+        }
     }
     handleMessage(result.data);
 });
@@ -261,13 +270,14 @@ const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.classList.contains('user') && node.dataset.user) {
-                    node.style.color = usernameColor(node.dataset.user);
+                const element = node as HTMLElement;
+                if (element.classList.contains('user') && element.dataset.user) {
+                    element.style.color = usernameColor(element.dataset.user);
                 }
-                node.querySelectorAll('[data-user].user').forEach(user => {
+                element.querySelectorAll('[data-user].user').forEach(user => {
                     if (user) {
                         // set color based on username hash
-                        user.style.color = usernameColor(user.dataset.user);
+                        (user as HTMLElement).style.color = usernameColor((user as HTMLElement).dataset.user!);
                     }
                 });                
             }

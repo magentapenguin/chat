@@ -1,4 +1,5 @@
 import z from "zod";
+import type * as Party from "partykit/server";
 
 const ChatMessage = z.object({
     type: z.literal('chat'),
@@ -31,63 +32,71 @@ const UpdateChatMessage = z.object({
     type: z.literal('messages'),
     messages: z.array(z.union([JoinMessage, LeaveMessage, ChatMessage])),
 });
-const ClientMessage = ChatMessage;/*z.union([
-    ChatMessage
-]);*/
+const ClientMessage = ChatMessage;
 const ServerMessage = z.union([
     ErrorMessage, JoinMessage, LeaveMessage, UpdateChatMessage, ChatMessage, SystemMessage
 ]);
 
-function stamp() {
+function stamp(): string {
     return new Date().toISOString();
 }
 
-export default class RelayServer {
-    constructor(room) {
-        this.room = room;
+interface Command {
+    use: (server: Server, msg: any, sender: Party.Connection, input: string[]) => any;
+    doc: string;
+}
+
+export default class Server implements Party.Server {
+    messages: any[];
+    commands: Record<string, Command>;
+
+    constructor(public room: Party.Room) {
         this.messages = [];
-    }
-    commands = {
-        "clear": {
-            use(server, msg, sender, input) {
-                server.messages = [];
-                server.syncMessages(true)
-                server.room.broadcast(JSON.stringify({ type: 'messages', messages: server.messages }));
-                return { type: 'info', message: 'Messages cleared' };
-            }, doc: '!clear - Clear all messages'
-        },
-        "help": {
-            use(server, msg, sender, input) {
-                if (input.length > 1) {
-                    const command = input[1];
-                    if (server.commands[command]) {
-                        return { type: 'info', message: server.commands[command].doc };
-                    } else {
-                        return { type: 'error', message: 'Command not found' };
+        this.commands = {
+            "clear": {
+                use: (server, msg, sender, input) => {
+                    server.messages = [];
+                    server.syncMessages(true);
+                    server.room.broadcast(JSON.stringify({ type: 'messages', messages: server.messages }));
+                    return { type: 'info', message: 'Messages cleared' };
+                },
+                doc: '!clear - Clear all messages'
+            },
+            "help": {
+                use: (server, msg, sender, input) => {
+                    if (input.length > 1) {
+                        const command = input[1];
+                        if (server.commands[command]) {
+                            return { type: 'info', message: server.commands[command].doc };
+                        } else {
+                            return { type: 'error', message: 'Command not found' };
+                        }
                     }
-                }
-                return { type: 'info', message: 'Commands: ' + Object.keys(server.commands).map((x)=>'!'+x).join(', ') + '\nUse !help [command] to get help on a command' };
-            }, doc: '!help [command] - Get help on a command'
-        },
-        "list": {
-            use(server, msg, sender, input) {
-                const formatuser = (user) => {
-                    return `<span class="user" data-user="${user}">${user}</span>`;
-                }
-                let users = [...server.room.getConnections()].map((conn) => conn.id);
-                let userlist = users.map(formatuser).join(', ');
-                return { type: 'info', message: `Users: ${userlist}` };
-            }, doc: '!list - List users in the chat'
-        }
+                    return { type: 'info', message: 'Commands: ' + Object.keys(server.commands).map((x) => '!' + x).join(', ') + '\nUse !help [command] to get help on a command' };
+                },
+                doc: '!help [command] - Get help on a command'
+            },
+            "list": {
+                use: (server, msg, sender, input) => {
+                    const formatuser = (user: string) => {
+                        return `<span class="user" data-user="${user}">${user}</span>`;
+                    }
+                    let users = [...server.room.getConnections()].map((conn) => conn.id);
+                    let userlist = users.map(formatuser).join(', ');
+                    return { type: 'info', message: `Users: ${userlist}` };
+                },
+                doc: '!list - List users in the chat'
+            }
+        };
     }
-    // when a client sends a message
-    onMessage(message, sender) {
+    onMessage(message: string, sender: Party.Connection): void {
         const result = ClientMessage.safeParse(JSON.parse(message));
         if (!result.success) {
             console.error(result.error);
             sender.send(JSON.stringify({ type: 'error', message: 'Invalid message' }));
             return;
         }
+        sender.send(JSON.stringify({ type: 'calm' }));
         const data = result.data;
         let preventSend = false;
         if (data.type === 'chat') {
@@ -99,7 +108,7 @@ export default class RelayServer {
                 if (this.commands[command]) {
                     preventSend = true;
                     let out;
-                    const handle_out = (result) => {
+                    const handle_out = (result: any) => {
                         console.log('handle', result);
                         if (out.type === 'info') {
                             sender.send(JSON.stringify({ type: 'system', message: result.message, timestamp: stamp() }));
@@ -129,32 +138,27 @@ export default class RelayServer {
         }
         if (!preventSend) this.room.broadcast(JSON.stringify(data), [sender.id]);
     }
-    onReady() {
-        this.syncMessages();
-    }
-    static getCountry(connection) {
-        const country = (ctx.request.cf?.country) ?? "unknown";
-        return [country];
-    }
-    // when a new client connects
-    async onConnect(connection) {
+
+    async onConnect(connection: Party.Connection): Promise<void> {
         const data = { type: 'join', username: connection.id, timestamp: stamp() };
         this.room.broadcast(JSON.stringify(data), [connection.id]);
         this.messages.push(data);
         await this.syncMessages();
         connection.send(JSON.stringify({ type: 'messages', messages: this.messages }));
     }
-    // when a client disconnects
-    onClose(connection) {
+
+    onClose(connection: Party.Connection): void {
         const data = { type: 'leave', username: connection.id, timestamp: stamp() };
         this.room.broadcast(JSON.stringify(data), [connection.id]);
         this.messages.push(data);
         this.syncMessages();
     }
-    async syncMessages(force = false, update = false) {
+
+    async syncMessages(force: boolean = false, update: boolean = false): Promise<void> {
         if ((!this.messages || this.messages.length <= 0 || update) && !force) {
-            this.messages = await this.room.storage.get('messages');
+            this.messages = await this.room.storage.get('messages') ?? [];
         }
         await this.room.storage.put('messages', this.messages);
     }
 }
+Server satisfies Party.Worker;

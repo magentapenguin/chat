@@ -93,7 +93,6 @@ a, .link {
 
 a:hover, .link:hover {
     color: var(--link-hover);
-    text-underline-offset: 0.2em;
 }
 .no-line {
     text-decoration: none !important;
