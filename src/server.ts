@@ -42,8 +42,12 @@ function stamp(): string {
 }
 
 interface Command {
-    use: (server: Server, msg: any, sender: Party.Connection, input: string[]) => any;
+    use: (server: Server, msg: any, sender: Party.Connection, input: string[]) => CommandOutput | Promise<CommandOutput>;
     doc: string;
+}
+interface CommandOutput {
+    type: 'info' | 'error';
+    message: string;
 }
 
 export default class Server implements Party.Server {
@@ -96,7 +100,6 @@ export default class Server implements Party.Server {
             sender.send(JSON.stringify({ type: 'error', message: 'Invalid message' }));
             return;
         }
-        sender.send(JSON.stringify({ type: 'calm' }));
         const data = result.data;
         let preventSend = false;
         if (data.type === 'chat') {
@@ -107,13 +110,13 @@ export default class Server implements Party.Server {
                 const command = parts[0].substring(1);
                 if (this.commands[command]) {
                     preventSend = true;
-                    let out;
-                    const handle_out = (result: any) => {
+                    let out: CommandOutput | Promise<CommandOutput> | null = null;
+                    const handle_out = (result: CommandOutput) => {
                         console.log('handle', result);
-                        if (out.type === 'info') {
+                        if (result.type === 'info') {
                             sender.send(JSON.stringify({ type: 'system', message: result.message, timestamp: stamp() }));
                         }
-                        if (out.type === 'error') {
+                        if (result.type === 'error') {
                             sender.send(JSON.stringify({ type: 'error', message: result.message, timestamp: stamp() }));
                         }
                     }

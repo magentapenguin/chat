@@ -4,8 +4,9 @@ import dompurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
 import { full as emoji } from 'markdown-it-emoji';
 import twemoji from '@twemoji/api';
-import ConnectionStatus from './connection-status.ts';
+import ConnectionStatus from './connection-status';
 import z from "zod";
+import './style.css';
 
 const md = new MarkdownIt({
     html: false,
@@ -13,8 +14,19 @@ const md = new MarkdownIt({
     typographer: true,
 });
 md.use(emoji);
+md.linkify.add('@', {
+    validate: (text) => {
+        
+    },
+    normalize: (match) => {
+        // TODO
+    },
+});
+
+// add link formating
 md.renderer.rules.link_open = function(tokens, idx, options, env, self) {
-    const href = tokens[idx].attrs[tokens[idx].attrs.length - 1][1];
+
+    const href = tokens[idx].attrs ? tokens[idx].attrs[tokens[idx].attrs.length - 1][1] : '';
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">`;
 }
 md.renderer.rules.link_close = function(tokens, idx, options, env, self) {
@@ -257,9 +269,6 @@ socket.addEventListener('message', (message: MessageEvent) => {
             for (const msg of data.messages) {
                 handleMessage(msg);
             }
-        }
-        if (type === 'calm') {
-            location.reload();
         }
     }
     handleMessage(result.data);

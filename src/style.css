@@ -162,6 +162,16 @@ button {
 .message > .user {
     font-weight: bold;
 }
+.message > .ping {
+    font-weight: bold;
+    --ping-color: var(--theme);
+    color: var(--ping-color);
+    background-color: rgb(from var(--ping-color) r g b / 0.3);    
+}
+.message > .ping:hover {
+    color: var(--ping-color);
+    background-color: rgb(from var(--ping-color) r g b / 0.4);
+}
 .message.error {
     color: #800000;
 }
