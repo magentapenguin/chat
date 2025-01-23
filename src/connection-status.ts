@@ -1,6 +1,6 @@
 // a webcomponent that will be used to display the connection status of the user
 
-import PartySocket from "partysocket";
+import type PartySocket from "partysocket";
  
 /**
  * Represents the connection status of a WebSocket.
@@ -64,7 +64,7 @@ export default class ConnectionStatus extends HTMLElement {
      * Called when the element is added to the DOM.
      * Sets the role and aria-live attributes for accessibility.
      */
-    connectedCallback() {
+    private connectedCallback() {
         this.setAttribute('role', 'status');
         this.setAttribute('aria-live', 'polite');
     }
@@ -87,7 +87,7 @@ export default class ConnectionStatus extends HTMLElement {
         this.onStateChange();
     }
 
-    updateStatus(message: string, status: string) {
+    private updateStatus(message: string, status: string) {
         (this.shadow.querySelector('.status') as HTMLElement).style.backgroundColor = `var(--${status})`;
         (this.shadow.querySelector('.message') as HTMLElement).textContent = message;
     }
@@ -95,7 +95,7 @@ export default class ConnectionStatus extends HTMLElement {
      * Handles state changes of the WebSocket.
      * This method should be implemented to update the status and message based on the WebSocket state.
      */
-    onStateChange() {
+    private onStateChange() {
         if (!this.socket) return;
         switch (this.socket.readyState) {
             case WebSocket.CONNECTING:

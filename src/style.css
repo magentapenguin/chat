@@ -161,16 +161,22 @@ button {
 }
 .message > .user {
     font-weight: bold;
+    --user-color: #00b7ff;
+    color: var(--user-color);
 }
-.message > .ping {
-    font-weight: bold;
-    --ping-color: var(--theme);
-    color: var(--ping-color);
-    background-color: rgb(from var(--ping-color) r g b / 0.3);    
+.message > .user.ping {
+    border-radius: 0.5em;
+    color: var(--user-color);
+    filter: brightness(0.8);
+    padding: 0.05em 0.3em;
+    padding-top: 0;
+    cursor: pointer;
+    background-color: rgb(from var(--user-color) r g b / 0.3);    
 }
-.message > .ping:hover {
-    color: var(--ping-color);
-    background-color: rgb(from var(--ping-color) r g b / 0.4);
+
+.message > .user.ping:hover {
+    color: var(--user-color);
+    background-color: rgb(from var(--user-color) r g b / 0.5);
 }
 .message.error {
     color: #800000;
@@ -229,7 +235,7 @@ img.emoji {
     vertical-align: -0.1em;
 }
 .link-decor {
-    margin-left: 0.2rem;
+    margin-left: 0.1em;
     font-size: 0.8em;
 }
 

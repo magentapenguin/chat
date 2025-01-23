@@ -14,14 +14,6 @@ const md = new MarkdownIt({
     typographer: true,
 });
 md.use(emoji);
-md.linkify.add('@', {
-    validate: (text) => {
-        
-    },
-    normalize: (match) => {
-        // TODO
-    },
-});
 
 // add link formating
 md.renderer.rules.link_open = function(tokens, idx, options, env, self) {
@@ -86,6 +78,7 @@ const tips: string[] = [
     "Be nice!",
     "Use !list to list all users",
     "Ask for help if you need it",
+    "[Markdown](https://www.markdownguide.org/basic-syntax/) is supported", // Odd: removed during convertion to ts (copilot bug?)
 ];
 let tipsIndex = Math.floor(Math.random() * tips.length);
 const chatTip = document.getElementById('chat-tip') as HTMLElement;
@@ -151,6 +144,45 @@ function usernameColor(username: string, seed = 0): string {
     const hue = cyrb53(username, seed) % 360;
     return `hsl(${hue}, 50%, 50%)`;
 }
+const highlightPings = (message: string): string => {
+    // Find all occurrences of @username and wrap them in a span
+    const fixHTML = (message: string): string => {
+        return message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    let result = message;
+    const containerdoc = document.createDocumentFragment();
+    const container = document.createElement('div');
+    containerdoc.appendChild(container);
+    container.innerHTML = message;
+    console.log(container, message);
+    // Find all occurrences of @username in element text and wrap them in a span
+    containerdoc.querySelectorAll('*').forEach((node) => {
+        if (node.children.length <= 0 && node.textContent) {
+            const parts = node.textContent.split(/(@\w+)/g);
+            console.log(parts);
+            node.textContent = '';
+            parts.map((part) => {
+                if (part.startsWith('@')) {
+                    console.log('found ping', part);
+                    const span = document.createElement('span');
+                    span.className = 'ping user';
+                    span.textContent = part;
+                    span.dataset.user = part.substring(1);
+                    console.log(span);
+                    return span;
+                } else {
+                    return document.createTextNode(part);
+                }
+            }).forEach((part) => {
+                node.appendChild(part);
+            });
+        }
+    });
+    console.log(containerdoc, container, containerdoc.textContent);
+    result = container.innerHTML;
+    return result;
+}
+
 const alphabet = '6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz';
 const nanoid = customAlphabet(alphabet, 8);
 
@@ -170,7 +202,7 @@ const socket = new PartySocket({
 const log_message = (msg: { message: string, username: string, timestamp: string }): HTMLElement => {
     const el = document.createElement('div');  
     const sanitizedMessage = dompurify.sanitize(md.renderInline(msg.message));
-    const parsedMessage = twemoji.parse(sanitizedMessage);
+    const parsedMessage = highlightPings(twemoji.parse(sanitizedMessage));
     el.innerHTML = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${parsedMessage}`;
     el.className = 'message';
     chat.appendChild(el);
@@ -281,12 +313,12 @@ const observer = new MutationObserver((mutations) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const element = node as HTMLElement;
                 if (element.classList.contains('user') && element.dataset.user) {
-                    element.style.color = usernameColor(element.dataset.user);
+                    element.style.setProperty('--user-color', usernameColor(element.dataset.user));
                 }
                 element.querySelectorAll('[data-user].user').forEach(user => {
                     if (user) {
                         // set color based on username hash
-                        (user as HTMLElement).style.color = usernameColor((user as HTMLElement).dataset.user!);
+                        (user as HTMLElement).style.setProperty('--user-color', usernameColor((user as HTMLElement).dataset.user!));
                     }
                 });                
             }
