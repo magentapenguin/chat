@@ -37,6 +37,7 @@ const ChatMessage = z.object({
     type: z.literal('chat'),
     message: z.string(),
     username: z.string(),
+    nickname: z.optional(z.string()),
     timestamp: z.date({coerce: true}),
 });
 
@@ -146,9 +147,6 @@ function usernameColor(username: string, seed = 0): string {
 }
 const highlightPings = (message: string): string => {
     // Find all occurrences of @username and wrap them in a span
-    const fixHTML = (message: string): string => {
-        return message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
     let result = message;
     const containerdoc = document.createDocumentFragment();
     const container = document.createElement('div');

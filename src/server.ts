@@ -5,6 +5,7 @@ const ChatMessage = z.object({
     type: z.literal('chat'),
     message: z.string(),
     username: z.string(),
+    nickname: z.optional(z.string()),
     timestamp: z.date({ coerce: true }),
 });
 
@@ -90,10 +91,56 @@ export default class Server implements Party.Server {
                     return { type: 'info', message: `Users: ${userlist}` };
                 },
                 doc: '!list - List users in the chat'
-            }
+            },
+            "nick": {
+                use: (server, msg, sender, input) => {
+                    if (input.length < 2) {
+                        return { type: 'error', message: 'Usage: !nick [name]' };
+                    }
+                    const newid = input[1];
+                    sender.setState({ nick: newid });
+                    return { type: 'info', message: `You are now known as ${newid}` };
+                },
+                doc: '!nick [name] - Change your username'
+            },
         };
     }
-    onMessage(message: string, sender: Party.Connection): void {
+    handleCommand(message: string, data: any, sender: Party.Connection) {
+        let preventSend = false;
+        const parts = data.message.split(' ');
+        const command = parts[0].substring(1);
+        if (this.commands[command]) {
+            preventSend = true;
+            let out: CommandOutput | Promise<CommandOutput> | null = null;
+            const handle_out = (result: CommandOutput) => {
+                console.log('handle', result);
+                if (result.type === 'info') {
+                    sender.send(JSON.stringify({ type: 'system', message: result.message, timestamp: stamp() }));
+                }
+                if (result.type === 'error') {
+                    sender.send(JSON.stringify({ type: 'error', message: result.message, timestamp: stamp() }));
+                }
+            }
+            try {
+                out = this.commands[command].use(this, message, sender, parts);
+            } catch (err) {
+                console.error(err);
+                sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
+                return preventSend;
+            }
+            console.log(out);
+            if (out instanceof Promise) {
+                out.then(handle_out).catch((err) => {
+                    console.error(err);
+                    sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
+                });
+            } else {
+                handle_out(out);
+            }
+        }
+        return preventSend;
+    }
+    onMessage(message: string, sender: Party.Connection<{ nick?: string }>): void {
         const result = ClientMessage.safeParse(JSON.parse(message));
         if (!result.success) {
             console.error(result.error);
@@ -101,45 +148,17 @@ export default class Server implements Party.Server {
             return;
         }
         const data = result.data;
+        data.nickname = sender.state?.nick;
+        console.log(data);
         let preventSend = false;
         if (data.type === 'chat') {
             this.messages.push(data);
             this.syncMessages();
             if (data.message.startsWith('!')) {
-                const parts = data.message.split(' ');
-                const command = parts[0].substring(1);
-                if (this.commands[command]) {
-                    preventSend = true;
-                    let out: CommandOutput | Promise<CommandOutput> | null = null;
-                    const handle_out = (result: CommandOutput) => {
-                        console.log('handle', result);
-                        if (result.type === 'info') {
-                            sender.send(JSON.stringify({ type: 'system', message: result.message, timestamp: stamp() }));
-                        }
-                        if (result.type === 'error') {
-                            sender.send(JSON.stringify({ type: 'error', message: result.message, timestamp: stamp() }));
-                        }
-                    }
-                    try {
-                        out = this.commands[command].use(this, message, sender, parts);
-                    } catch (err) {
-                        console.error(err);
-                        sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
-                        return;
-                    }
-                    console.log(out);
-                    if (out instanceof Promise) {
-                        out.then(handle_out).catch((err) => {
-                            console.error(err);
-                            sender.send(JSON.stringify({ type: 'error', message: 'An error occurred while processing the command', timestamp: stamp() }));
-                        });
-                    } else {
-                        handle_out(out);
-                    }
-                }
+                preventSend = this.handleCommand(message, data, sender);
             }
         }
-        if (!preventSend) this.room.broadcast(JSON.stringify(data), [sender.id]);
+        this.room.broadcast(JSON.stringify(data), [sender.id]);
     }
 
     async onConnect(connection: Party.Connection): Promise<void> {
