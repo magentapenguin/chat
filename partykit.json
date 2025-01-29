@@ -7,7 +7,10 @@
         "path": "public",
         "build": {
             "entry": "src/client.ts",
-            "minify": true
+            "minify": true,
+            "loader": {
+                ".html": "text"
+            }
         }
     }
 }

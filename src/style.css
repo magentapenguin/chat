@@ -161,7 +161,7 @@ button {
 }
 .message > .user {
     font-weight: bold;
-    --user-color: #00b7ff;
+    --user-color:  ;
     color: var(--user-color);
 }
 .message > .user.ping {
