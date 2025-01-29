@@ -31,7 +31,7 @@ const SystemMessage = z.object({
 });
 const UpdateChatMessage = z.object({
     type: z.literal('messages'),
-    messages: z.array(z.union([JoinMessage, LeaveMessage, ChatMessage])),
+    messages: z.array(z.union([JoinMessage, LeaveMessage, ChatMessage, SystemMessage])),
 });
 const ClientMessage = ChatMessage;
 const ServerMessage = z.union([
