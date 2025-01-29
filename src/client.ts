@@ -78,7 +78,7 @@ const tips: string[] = [
     "Be nice!",
     "Use !list to list all users",
     "Ask for help if you need it",
-    "[Markdown](https://www.markdownguide.org/basic-syntax/) is supported", // Odd: removed during convertion to ts (copilot bug?)
+    "[Markdown](https://www.markdownguide.org/basic-syntax/) is supported", // Odd: removed during conversion to ts (copilot bug?)
 ];
 let tipsIndex = Math.floor(Math.random() * tips.length);
 const chatTip = document.getElementById('chat-tip') as HTMLElement;
