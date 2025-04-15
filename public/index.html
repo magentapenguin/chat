@@ -13,6 +13,10 @@
 </head>
 
 <body>
+    <div id="tl-bar">
+        <button id="allow-notifications" class="link">Allow notifications</button>
+        <button id="share" class="link">Share</button>
+    </div>  
     <connection-status></connection-status>
     <div id="chat">
         <noscript>
@@ -20,7 +24,7 @@
         </noscript>
     </div>
     <div id="chat-form-container">
-        <div>Your id: <strong id="chat-id" class="user">Loading...</strong> | Room: <strong id="chat-room"
+        <div>Your id: <strong id="chat-id" class="user" title="Use !nick &lt;nick&gt; to change nicknames">Loading...</strong> | Room: <strong id="chat-room"
                 title="Use !move &lt;room&gt; to move rooms">Loading...</strong></div>
         <form id="chat-form">
             <input type="text" name="message" id="message" placeholder="Type your message here">
