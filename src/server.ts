@@ -137,6 +137,8 @@ export default class Server implements Party.Server {
             } else {
                 handle_out(out);
             }
+        } else {
+            sender.send(JSON.stringify({ type: 'error', message: 'Command not found', timestamp: stamp() }));
         }
         return preventSend;
     }

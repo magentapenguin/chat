@@ -189,6 +189,46 @@ if (!room) {
     room = 'chat';
     localStorage.setItem('room', room);
 }
+if (location.hash) {
+    const hash = location.hash.substring(1);
+    if (hash.length > 0) {
+        room = hash;
+        localStorage.setItem('room', room);
+        history.replaceState({}, '', location.pathname);
+    }
+}
+
+document.getElementById('share')!.addEventListener('click', () => {
+    const url = new URL(location.href);
+    url.hash = room;
+    if (navigator.share && navigator.canShare({ url: url.href })) {
+        navigator.share({
+            title: 'Join me!',
+            text: 'Join the chat!',
+            url: url.href,
+        }).then(() => {
+            console.log('Thanks for sharing!');
+        }).catch((error) => {
+            console.error('Error sharing:', error);
+            sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT (ERROR)</span>: Error sharing link: ${error}`, 'error');
+            navigator.clipboard.writeText(url.href).then(() => {
+                console.log('Copied to clipboard');
+                sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Copied link to clipboard: ${url.href}`);
+            }).catch((error) => {
+                console.error('Error copying to clipboard:', error);
+                sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT (ERROR)</span>: Error copying link to clipboard: ${error}`, 'error');
+            });
+        });
+    } else {
+        navigator.clipboard.writeText(url.href).then(() => {
+            console.log('Copied to clipboard');
+            sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT</span>: Copied link to clipboard: ${url.href}`);
+        }).catch((error) => {
+            console.error('Error copying to clipboard:', error);
+            sys_message(`${timestamp2html(stamp())} - <span class="user">CLIENT (ERROR)</span>: Error copying link to clipboard: ${error}`, 'error');
+        });
+    }
+});
 
 const socket = new PartySocket({
     host: location.host,
@@ -197,10 +237,54 @@ const socket = new PartySocket({
 });
 (document.querySelector('connection-status') as ConnectionStatus).link(socket);
 
+let notificationPermission = localStorage.getItem('notificationPermission');
+if (notificationPermission === null) {
+    notificationPermission = 'default';
+    localStorage.setItem('notificationPermission', notificationPermission);
+}
+// request notification permission
+    const allowNotifications = document.getElementById('allow-notifications') as HTMLButtonElement;
+if (notificationPermission === 'default') {
+    allowNotifications.addEventListener('click', () => {
+        console.log('Requesting notification permission');
+        Notification.requestPermission().then((permission) => {
+            if (permission === 'granted') {
+                notificationPermission = 'granted';
+                localStorage.setItem('notificationPermission', notificationPermission);
+                location.reload();
+            } else {
+                notificationPermission = 'denied';
+                localStorage.setItem('notificationPermission', notificationPermission);
+                allowNotifications.innerHTML = 'Notifications denied';
+                allowNotifications.disabled = true;
+                setTimeout(() => allowNotifications.remove(), 5000);
+            }
+        });
+    });
+} else if (notificationPermission === 'granted') {
+    allowNotifications.innerText = 'Disable notifications';
+    allowNotifications.addEventListener('click', () => {
+        notificationPermission = 'default';
+        localStorage.setItem('notificationPermission', notificationPermission);
+        location.reload();
+    });
+} else {
+    allowNotifications.remove();
+}
+
 const log_message = (msg: { message: string, username: string, timestamp: string }): HTMLElement => {
     const el = document.createElement('div');  
     const sanitizedMessage = dompurify.sanitize(md.renderInline(msg.message));
     const parsedMessage = highlightPings(twemoji.parse(sanitizedMessage));
+    if (notificationPermission === 'granted' && document.visibilityState === 'hidden' && msg.username !== socket.id) {
+        const notification = new Notification('New message', {
+            body: `${msg.username}: ${msg.message}`,
+            icon: '/favicon.ico',
+        });
+        notification.onclick = () => {
+            window.focus();
+        };
+    }
     el.innerHTML = `${timestamp2html(msg.timestamp)} - <span class="user" data-user="${msg.username}">${msg.username}</span>: ${parsedMessage}`;
     el.className = 'message';
     chat.appendChild(el);

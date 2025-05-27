@@ -220,7 +220,7 @@ time {
 }
 small {
     font-size: small;
-    filter: brightness(0.5);
+    opacity: 0.5;
 }
 #chat-tip-next {
     --link: var(--color);
@@ -267,4 +267,15 @@ img.emoji {
 }
 #settings-button:hover svg {
     transform: rotate(180deg);
+}
+
+#tl-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 0.5em;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: row;
+    gap: 0.2em;
 }
