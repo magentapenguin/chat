@@ -1,3 +1,5 @@
+@import url('https://rsms.me/inter/inter.css');
+
 body {
     --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     font-family: var(--font);
@@ -14,6 +16,7 @@ body {
     font-size: 1.2rem;
     display: flex;
     flex-direction: column;
+    margin: 0.25rem;
 }
 html {
     margin: 0;
@@ -270,7 +273,7 @@ img.emoji {
 }
 
 #tl-bar {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     padding: 0.5em;
@@ -278,4 +281,68 @@ img.emoji {
     display: flex;
     flex-direction: row;
     gap: 0.2em;
+}
+
+#deprecated-warning {
+    font-family: 'Inter Variable', 'Inter', var(--font);
+    font-size: 1rem;
+    max-width: calc(100vw - 1em);
+    display: grid;
+    align-items: center;
+    grid-template-areas: "icon title" "icon text";
+    grid-template-columns: 3em minmax(2em, 1fr);
+    grid-template-rows: auto auto;
+    width: max-content;
+    column-gap: 0.5em;
+    padding: 0.5em;
+    border-radius: 0.5em;
+    align-self: center;
+    position: sticky;
+    top: 0.25rem;
+    margin-bottom: -1.2rem;
+    z-index: 1000;
+    background-color: oklch(94.5% 0.129 101.54);
+    border: 1px solid oklch(79.5% 0.184 86.047);
+}
+#deprecated-warning * {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter Variable', 'Inter', var(--font);
+}
+#deprecated-warning svg {
+    grid-area: icon;
+    aspect-ratio: 1;
+    max-width: 3em;
+    color: black;
+}
+#deprecated-warning strong {
+    grid-area: title;
+    font-weight: bold;
+}
+#deprecated-warning p {
+    grid-area: text;
+    margin: 0;
+}
+#deprecated-warning a {
+    color: oklch(52% 0.105 223.128);
+    text-decoration: underline;
+}
+#deprecated-warning a:hover {
+    color: oklch(52% 0.105 223.128 / 0.8);
+    text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) {
+    #deprecated-warning {
+        background-color: oklch(28.6% 0.066 53.813);
+        border: 1px solid oklch(42.1% 0.095 57.708);
+    }
+    #deprecated-warning svg {
+        color: oklch(79.5% 0.184 86.047);
+    }
+    #deprecated-warning a {
+        color: oklch(86.5% 0.127 207.078);
+    }
+    #deprecated-warning a:hover {
+        color: oklch(86.5% 0.127 207.078 / 0.8);
+    }
 }
